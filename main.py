@@ -7,6 +7,7 @@ import numpy as np
 
 # Load the models
 modelDanger = torch.hub.load('ultralytics/yolov5', 'custom', path='C:/Users/mihap/yolov5/runs/train/exp9/weights/best.pt')
+modelRoad = torch.hub.load('ultralytics/yolov5', 'custom', path='Yolo\RoadBest.pt')
 
 def resize_image(image, max_size=(800, 600)):
     """
@@ -44,14 +45,18 @@ def detect_objects():
 
             # Run detection using both models
             results_danger = modelDanger(frame)
+            results_road = modelRoad(frame)
 
             # Render detections
             results_danger.render()
+            results_road.render()
 
             # Update the detection results label
             detected_classes = []
             if results_danger.pred[0] is not None:
                 detected_classes.extend(results_danger.names[int(cls)] for cls in results_danger.pred[0][:, -1])
+            if results_road.pred[0] is not None:
+                detected_classes.extend(results_road.names[int(cls)] for cls in results_road.pred[0][:, -1])
 
             # Convert array to Image
             frame_image = Image.fromarray(frame)
@@ -64,11 +69,15 @@ def detect_objects():
 
 # Create the main window
 window = tk.Tk()
-window.title("Danger on the Road Detection")
+window.title("Detection App")
 window.geometry("820x680")  # Adjust window size to include status bar
 
 # Create a canvas to show the video frames
 canvas = tk.Canvas(window, width=800, height=600)
 canvas.pack()
+
+# Buttons for loading video and running detection
+btn_load = tk.Button(window, text="Open Video", command=open_video)
+btn_load.pack(side='left')
 
 window.mainloop()
