@@ -1,6 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+class Triangle:
+    def __init__(self, p1, p2, p3, points):
+        # Assuming p1, p2, and p3 are indices
+        self.p1 = p1
+        self.p2 = p2
+        self.p3 = p3
+
+        self.p1_id = np.where(points == p1)[0][0]
+        self.p2_id = np.where(points == p2)[0][0]
+        self.p3_id = np.where(points == p3)[0][0]
+        self.normal = np.cross(
+            points[self.p2_id] - points[self.p1_id], points[self.p3_id] - points[self.p1_id])
+        self.normal /= np.linalg.norm(self.normal)
+        self.center = (points[self.p1_id] +
+                       points[self.p2_id] + points[self.p3_id]) / 3
+        self.positive_points = []
+
+    def __str__(self):
+        return "Triangle: p1 = " + str(self.p1) + ", p2 = " + str(self.p2) + ", p3 = " + str(self.p3)
+
+    def __eq__(self, other):
+        return np.array_equal(points[self.p1_id], points[other.p1_id]) \
+            and np.array_equal(points[self.p2_id], points[other.p2_id]) \
+            and np.array_equal(points[self.p3_id], points[other.p3_id])
+
+    def __hash__(self):
+        return hash((self.p1_id, self.p2_id, self.p3_id))
+
 def extremePoints(points):
     # Find extreme points
     max_x_point = points[np.argmax(points[:, 0])]
