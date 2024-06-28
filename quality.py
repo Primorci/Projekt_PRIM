@@ -6,8 +6,7 @@ import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.collections import LineCollection
 
-# Load data from the CSV file
-file_path = "/Users/jureantolinc/Library/Mobile Documents/com~apple~CloudDocs/Revordings faks/4/Gyro_Makedam1_snemanje4.csv"
+file_path = "/Users/jureantolinc/Library/Mobile Documents/com~apple~CloudDocs/Revordings faks/4/Gyro_Makedam2_snemanje4.csv"
 gyroscope_y_values = []
 timestamps = []
 with open(file_path, "r") as csv_file:
@@ -22,9 +21,11 @@ class RealTimePlot:
     def __init__(self, root):
         self.root = root
         self.root.title("Real-Time GyroscopeY Plot")
-        self.root.geometry("1200x800")  # Set the window size to 1200x800 pixels
+        self.root.geometry("1200x800")
 
-        self.fig, self.ax = plt.subplots(facecolor='white')  # Set figure background to white
+        self.fig, self.ax = plt.subplots()
+        self.fig.patch.set_facecolor('white')
+        self.ax.set_facecolor('white')
         self.ax.tick_params(colors='black', which='both')  # Change the color of the ticks
         self.ax.spines['top'].set_color('black')
         self.ax.spines['bottom'].set_color('black')
@@ -58,7 +59,7 @@ class RealTimePlot:
 
         # Initialize debug features as None
         self.red_lines = None
-        self.yellow_lines = None
+        self.orange_lines = None
 
     def update_debug(self):
         self.update(None)
@@ -73,17 +74,16 @@ class RealTimePlot:
             segment_data = self.gyroscope_y_values[start_idx:end_idx]
             segment_time = self.timestamps[start_idx:end_idx]
 
-            # Change color based on thresholds for this segment
             color = 'green'
             if np.any(np.abs(segment_data) >= 2):
                 color = 'red'
             elif np.any(np.abs(segment_data) >= 0.25):
-                color = 'yellow'
+                color = 'orange'
 
             # Create segments with their respective colors
             points = np.array([segment_time, segment_data]).T.reshape(-1, 1, 2)
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            lc = LineCollection(segments, colors=color, linewidths=3, linestyle='solid')  # Thinner lines
+            lc = LineCollection(segments, colors=color, linewidths=3, linestyle='solid')
             self.ax.add_collection(lc)
 
             self.ax.set_ylim(-5, 5)
@@ -100,25 +100,25 @@ class RealTimePlot:
             if self.red_lines is not None:
                 for line in self.red_lines:
                     line.remove()
-            if self.yellow_lines is not None:
-                for line in self.yellow_lines:
+            if self.orange_lines is not None:
+                for line in self.orange_lines:
                     line.remove()
                     
             # Draw dashed lines for red threshold
             self.red_lines = [self.ax.axhline(2, color='red', linestyle='--', alpha=0.8),
                               self.ax.axhline(-2, color='red', linestyle='--', alpha=0.8)]
-            # Draw dashed lines for yellow threshold
-            self.yellow_lines = [self.ax.axhline(0.25, color='yellow', linestyle='--', alpha=0.8),
-                                 self.ax.axhline(-0.25, color='yellow', linestyle='--', alpha=0.8)]
+            # Draw dashed lines for orange threshold
+            self.orange_lines = [self.ax.axhline(0.25, color='orange', linestyle='--', alpha=0.8),
+                                 self.ax.axhline(-0.25, color='orange', linestyle='--', alpha=0.8)]
         else:
             if self.red_lines is not None:
                 for line in self.red_lines:
                     line.remove()
                 self.red_lines = None
-            if self.yellow_lines is not None:
-                for line in self.yellow_lines:
+            if self.orange_lines is not None:
+                for line in self.orange_lines:
                     line.remove()
-                self.yellow_lines = None
+                self.orange_lines = None
 
         self.canvas.draw()
 
