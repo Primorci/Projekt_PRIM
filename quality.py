@@ -14,16 +14,12 @@ with open(file_path, "r") as csv_file:
 # Convert the array to numpy array
 gyroscope_y_values = np.array(gyroscope_y_values)
 
-# Create a sine wave from the gyroscope_y_values
-time = np.arange(0, len(gyroscope_y_values))  # Assuming time starts from 0
-frequency = 0.1  # Adjust this value as needed
-sin_wave = np.sin(2 * np.pi * frequency * time)
+# Adjust time axis
+time = np.arange(0, len(gyroscope_y_values)) / 20.0  # assuming 20 Hz frequency
 
-# Plot the original data and the sine wave
-plt.plot(gyroscope_y_values, label='Original Data')
-plt.plot(sin_wave, label='Sine Wave')
-plt.xlabel('Time')
-plt.ylabel('Value')
-plt.title('Original Data vs Sine Wave')
-plt.legend()
+# Plot the original data with positive and negative values
+plt.plot(time, np.abs(gyroscope_y_values))
+plt.xlabel('Time (s)')
+plt.ylabel('|GyroscopeY| Value')
+plt.title('Original GyroscopeY Data (Positive and Negative Values)')
 plt.show()
