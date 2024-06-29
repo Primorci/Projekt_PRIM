@@ -16,6 +16,39 @@ import zipfile
 import threading
 import glob
 
+# MQTT lib
+import time
+import psutil
+import paho.mqtt.client as mqtt
+from prometheus_client import start_http_server, Counter, Summary, Gauge
+
+# Start Prometheus metrics server
+start_http_server(5555)
+
+# IP address and port of MQTT Broker (Mosquitto MQTT)
+broker = "10.8.1.6"
+port = 1883
+topic = "/data"
+
+def on_connect(client, userdata, flags, reasonCode, properties=None):
+    if reasonCode == 0:
+        print("Connected to MQTT Broker successfully.")
+    else:
+        print(f"Failed to connect to MQTT Broker. Reason: {reasonCode}")
+
+def on_disconnect(client, userdata, rc):
+    print(f"Disconnected from MQTT Broker. Reason: {rc}")
+
+producer = mqtt.Client(client_id="producer_1", callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+
+# Connect to MQTT broker
+producer.connect(broker, port, 60)
+producer.loop_start()  # Start a new thread to handle network traffic and dispatching callbacks
+
+# Setup MQTT client
+producer.on_connect = on_connect
+producer.on_disconnect = on_disconnect
+
 # Load the models
 modelDanger = torch.hub.load('ultralytics/yolov5', 'custom', path='Yolo/DangerBest.pt')
 modelRoad = torch.hub.load('ultralytics/yolov5', 'custom', path='Yolo/RoadBest.pt')
