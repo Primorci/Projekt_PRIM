@@ -336,12 +336,12 @@ menu_bar.add_cascade(label="Help", menu=help_menu)
 window.config(menu=menu_bar)
 
 # Create a frame for the video and controls
-left_frame = tk.Frame(window)
+left_frame = tk.Frame(window, bg="white", padx=10, pady=10)
 left_frame.grid(row=0, column=0, sticky="nsew")
 
 # Create a canvas to display the video
 canvas = tk.Canvas(left_frame, bg="black", width=800, height=600)
-canvas.grid(row=0, column=0, rowspan=2, padx=10, pady=10)
+canvas.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
 
 # Create checkboxes for the detection options
 checkbox1 = tk.Checkbutton(left_frame, text="Show possible danger", variable=var1, bg="white")
@@ -352,8 +352,8 @@ checkbox2.grid(row=1, column=1, sticky="nw", padx=10, pady=5)
 checkbox3.grid(row=1, column=2, sticky="nw", padx=10, pady=5)
 
 # Create a label to display the detected classes
-detection_label = tk.Label(left_frame, text="Detected: None", font=("Helvetica", 12))
-detection_label.grid(row=3, column=0, sticky="nw", padx=10, pady=10)
+detection_label = tk.Label(left_frame, text="Detected: None", font=("Helvetica", 12), bg="white")
+detection_label.grid(row=2, column=0, columnspan=3, sticky="nw", padx=10, pady=10)
 
 # Create a status bar
 status_bar = tk.Label(window, text="Select a video file", bd=1, relief=tk.SUNKEN, anchor=tk.W)
@@ -363,8 +363,11 @@ status_bar.grid(row=2, column=0, columnspan=2, sticky="ew")
 fig, ax = plt.subplots()
 fig.patch.set_facecolor('white')
 
+ax.set_ylabel('Gyroscope Y')
+ax.set_xlabel('Seconds')
+
 canvas_plot = FigureCanvasTkAgg(fig, master=window)
-canvas_plot.get_tk_widget().grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+canvas_plot.get_tk_widget().grid(row=0, column=1, rowspan=2, sticky="nsew", padx=10, pady=10)
 
 window.grid_columnconfigure(0, weight=1)
 window.grid_columnconfigure(1, weight=1)
