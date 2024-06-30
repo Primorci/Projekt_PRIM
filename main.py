@@ -1,27 +1,27 @@
 import os
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'  # Allow multiple copies of the same library to be loaded
 
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
-import torch
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.collections import LineCollection
-import csv
-import zipfile
-import threading
-import glob
-import shutil
+import tkinter as tk  # GUI library
+from tkinter import filedialog, messagebox  # Dialog and message box functions
+from PIL import Image, ImageTk  # Image processing libraries
+import torch  # PyTorch for machine learning models
+import cv2  # OpenCV for video processing
+import numpy as np  # NumPy for numerical operations
+import matplotlib.pyplot as plt  # Matplotlib for plotting
+from matplotlib.animation import FuncAnimation  # Animation support in Matplotlib
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  # Embedding Matplotlib plots in Tkinter
+from matplotlib.collections import LineCollection  # For efficient line drawing
+import csv  # CSV file handling
+import zipfile  # ZIP file handling
+import threading  # Threading for concurrent execution
+import glob  # File pattern matching
+import shutil  # High-level file operations
 
-# MQTT lib
-import time
-import psutil
-import paho.mqtt.client as mqtt
-from prometheus_client import start_http_server, Counter, Summary, Gauge
+# MQTT library
+import time  # Time-related functions
+import psutil  # System and process utilities
+import paho.mqtt.client as mqtt  # MQTT protocol
+from prometheus_client import start_http_server, Counter, Summary, Gauge  # Prometheus metrics
 
 # Prometheus metrics
 FRAME_PROCESSING_RATE = Counter('frame_processing_rate', 'Number of frames processed per second')
@@ -111,11 +111,11 @@ def open_video(openMethod: int = 0, file_path = ""):
             messagebox.showinfo("Error", "Failed to load video.")
             return
         
-        start_event.wait()  
+        start_event.wait()  # Wait for the CSV loading to complete
 
         window.title(f"Danger on the Road Detection - {file_path}")
         status_bar.config(text="Video loaded: " + file_path)
-        detect_objects()
+        detect_objects()  # Start object detection
     else:
         status_bar.config(text="No video selected")
         messagebox.showinfo("Information", "No video file selected.")
@@ -181,7 +181,7 @@ def detect_objects():
                 ERROR_COUNT.inc()
                 print(f"Error processing frame: {e}")
 
-            window.after(64, detect_objects)
+            window.after(64, detect_objects)  # Continue processing the next frame
         else:
             cap.release()
             if os.path.isdir("ZIP_ex"):
@@ -298,14 +298,13 @@ def update(frame):
 
     window.after(0, canvas_plot.draw)
 
-
 # Create the main window
 window = tk.Tk()
 window.title("Detection App")
 window.geometry("1600x800")
 window.minsize(1600, 800)
 
-start_event = threading.Event()
+start_event = threading.Event()  # Event to coordinate CSV and video loading
 
 # Create a menu bar
 menu_bar = tk.Menu(window)
