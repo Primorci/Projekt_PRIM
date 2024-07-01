@@ -28,9 +28,11 @@ FRAME_PROCESSING_RATE = Counter('frame_processing_rate', 'Number of frames proce
 DETECTION_COUNT = Counter('detection_count', 'Number of objects detected')
 DETECTION_LATENCY = Summary('detection_latency_seconds', 'Time taken to process each frame')
 AVERAGE_CONFIDENCE = Summary('average_confidence', 'Average confidence score of detections')
+
 MEMORY_USAGE = Gauge('memory_usage_percent', 'Memory usage of the YOLO algorithm')
 CPU_USAGE = Gauge('cpu_usage_percent', 'CPU usage of the YOLO algorithm')
 ERROR_COUNT = Counter('error_count', 'Number of frames that failed to process')
+
 PROCESSING_TIME = Summary('processing_time_seconds', 'Time spent processing a frame')
 SEGMENT_COLOR = Gauge('segment_color', 'Color of the segment', ['color'])
 SEGMENT_DATA_MIN = Gauge('segment_data_min', 'Minimum value of the segment data')
@@ -78,7 +80,7 @@ def extract_zip():
     extract_to = "ZIP_ex"
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
-    
+
     video_files = glob.glob(os.path.join(extract_to, "*.mp4"))
     csv_files = glob.glob(os.path.join(extract_to, "*.csv"))
 
@@ -101,8 +103,8 @@ def resize_image(image, max_size=(800, 600)):
     return resized_image
 
 def open_video(openMethod: int = 0, file_path = ""):
-    global cap
-    if openMethod == 0:     
+    global cap, video_frame_rate
+    if openMethod == 0:
         file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4;*.avi;*.mov;*.mkv")])
     if file_path:
         cap = cv2.VideoCapture(file_path)
@@ -110,11 +112,13 @@ def open_video(openMethod: int = 0, file_path = ""):
             status_bar.config(text="Failed to load video")
             messagebox.showinfo("Error", "Failed to load video.")
             return
-        
+
         start_event.wait()  # Wait for the CSV loading to complete
 
         window.title(f"Danger on the Road Detection - {file_path}")
         status_bar.config(text="Video loaded: " + file_path)
+        video_frame_rate = cap.get(cv2.CAP_PROP_FPS)
+        print("VIDEO FRAME RATE: ", video_frame_rate)
         detect_objects()  # Start object detection
     else:
         status_bar.config(text="No video selected")
@@ -125,9 +129,23 @@ def detect_objects():
     Detect objects in the video frame by frame and display the results on the canvas.
     """
     global cap, canvas, window, photo
+    desired_interval = 1  # Process frames aligned with seconds
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    skip_frames = int(fps * desired_interval)
+
     if cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
+        frame_count = 0  # Initialize frame counter
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break  # Break loop if no more frames
+
+            frame_count += 1
+            
+            if frame_count % skip_frames != 0:
+                continue  # Skip this frame
+
             start_time = time.time()
             try:
                 # Convert the color from BGR to RGB
@@ -140,7 +158,7 @@ def detect_objects():
                 # Render detections
                 if var1.get():
                     results_danger.render()
-                if var2.get(): 
+                if var2.get():
                     results_road.render()
 
                 # Update the detection results label
@@ -177,16 +195,18 @@ def detect_objects():
                 FRAME_PROCESSING_RATE.inc()
                 DETECTION_LATENCY.observe(time.time() - start_time)
 
+                # window.after(1000, detect_objects)  # Continue processing the next frame
+                time.sleep(1)
             except Exception as e:
                 ERROR_COUNT.inc()
                 print(f"Error processing frame: {e}")
 
-            window.after(64, detect_objects)  # Continue processing the next frame
-        else:
-            cap.release()
-            if os.path.isdir("ZIP_ex"):
-                shutil.rmtree("ZIP_ex")
-            status_bar.config(text="Video ended")
+            
+    else:
+        cap.release()
+        if os.path.isdir("ZIP_ex"):
+            shutil.rmtree("ZIP_ex")
+        status_bar.config(text="Video ended")
 
 def update_system_metrics():
     """
@@ -207,7 +227,7 @@ def open_csv(openMethod: int = 0, file_path = ""):
         file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     elif openMethod == 1:
         file_path = file_path
-        
+
     if file_path:
         # Create a thread for loading the CSV file
         csv_thread = threading.Thread(target=load_csv, args=(file_path,))
@@ -230,20 +250,23 @@ def load_csv(file_path):
     num_segments = len(gyroscope_y_values) // 20
 
     ani = FuncAnimation(fig, update, frames=range(0, num_segments), interval=1000)
+    # ani = FuncAnimation(fig, update, frames=range(0, num_segments), interval=1000 / video_frame_rate)
+
     window.after(0, canvas_plot.draw)
 
 def update(frame):
+    global cap
     start_time = time.time()
 
     global red_lines, orange_lines
-
+    frame_rate = 20
     if frame is not None:
         if frame == 0:
             start_idx = 0
         else:
-            start_idx = frame * 20 - 1
+            start_idx = frame * frame_rate - 1
 
-        end_idx = (frame + 1) * 20
+        end_idx = (frame + 1) * frame_rate
         segment_data = gyroscope_y_values[start_idx:end_idx]
         segment_time = timestamps[start_idx:end_idx]
 
@@ -272,9 +295,9 @@ def update(frame):
             if orange_lines is not None:
                 for line in orange_lines:
                     line.remove()
-                    
+
             red_lines = [ax.axhline(2, color='red', linestyle='--', alpha=0.8),
-                         ax.axhline(-2, color='red', linestyle='--', alpha=0.8)]
+                        ax.axhline(-2, color='red', linestyle='--', alpha=0.8)]
             orange_lines = [ax.axhline(0.25, color='orange', linestyle='--', alpha=0.8),
                             ax.axhline(-0.25, color='orange', linestyle='--', alpha=0.8)]
         else:
@@ -369,9 +392,16 @@ ax.set_xlabel('Seconds')
 canvas_plot = FigureCanvasTkAgg(fig, master=window)
 canvas_plot.get_tk_widget().grid(row=0, column=1, rowspan=2, sticky="nsew", padx=10, pady=10)
 
-window.grid_columnconfigure(0, weight=1)
-window.grid_columnconfigure(1, weight=1)
 window.grid_rowconfigure(0, weight=1)
+window.grid_columnconfigure(1, weight=1)
+
+# Variables to store gyroscope data and animation
+gyroscope_y_values = []
+timestamps = []
+num_segments = 0
+red_lines = None
+orange_lines = None
+ani = None
 
 # Start a separate thread to continuously update system metrics
 metrics_thread = threading.Thread(target=update_system_metrics)
